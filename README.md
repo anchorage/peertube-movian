@@ -1,2 +1,3 @@
 # peertube-movian
-peertube movian plugin 
+A Movian plugin for watching content hosted on PeerTube
+based on dashkodo and buksa plugins

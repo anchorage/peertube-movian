@@ -1,0 +1,14 @@
+{
+  "author": "anchorage",
+  "category": "video",
+  "description": "<p>Peertube</p><p>A Movian plugin for watching content hosted on PeerTube ",
+  "file": "peertube.js",
+  "homepage": "https://joinpeertube.org/",
+  "icon": "logo.png",
+  "id": "peertube",
+  "showtimeVersion": "4.8",
+  "synopsis": "Free software to take back control of your videos",
+  "title": "Peertube",
+  "type": "ecmascript",
+  "version": "0.0.1"
+}
