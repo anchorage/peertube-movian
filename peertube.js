@@ -154,7 +154,7 @@
 						
 
 						page.appendItem(videoLink, "directory", {
-							title: torrentInfo.name,
+							title: videoDoc.name + ' ' + torrentInfo.resolution.label,
 							icon: MAIN_INSTANCE.substring(0, MAIN_INSTANCE.length - 1) + videoDoc.previewPath,
 							description: torrentInfoForDate
 						});
