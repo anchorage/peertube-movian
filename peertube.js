@@ -50,8 +50,9 @@
 //        log.d(service);
     });
     var apiString = 'api/v1/videos/';
-    var sortString = '?sort=-publishedAt&isLocal=true';
-	var url = MAIN_INSTANCE + apiString + sortString; 
+    var sortString = '?sort=-publishedAt&isLocal=true&count=';
+    var itemCounter = 15;
+	var url = MAIN_INSTANCE + apiString + sortString + itemCounter.toString(); 
 	var blue = '6699CC',
 		orange = 'FFA500',
 		red = 'EE0000',
@@ -66,7 +67,7 @@
 	}
 	
 //base list function
-	function mapSearchResults(page, data, total) {
+	function mapSearchResults(page, data) {
 		for (var i = 0; i < data.length; i++) {
 			var item = data[i];
 			page.appendItem(plugin.getDescriptor().id + ":movie:" + item.url.toString(), "video", {
@@ -96,8 +97,12 @@
 		page.loading = true;
 		var doc = showtime.httpReq(url).toString();
 		doc = showtime.JSONDecode(doc);
+        //var itemCounter = doc.total;
+        //var url = MAIN_INSTANCE + apiString + sortString + itemCounter.toString(); 
+        //var doc = showtime.httpReq(url).toString();
+		//doc = showtime.JSONDecode(doc);
 		if (doc) {
-			mapSearchResults(page, doc.data, doc.total);
+			mapSearchResults(page, doc.data);
 		}
 		page.loading = false;
 	});
