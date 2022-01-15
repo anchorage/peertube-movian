@@ -123,6 +123,18 @@
                     var videoJsonLink = MAIN_INSTANCE + apiString + docs[i].uuid;
                     var videoDoc = showtime.httpReq(videoJsonLink).toString();
                     videoDoc = showtime.JSONDecode(videoDoc);
+//for Livestreams                    
+                    if(videoDoc.isLive){
+                        
+                        var videoLink = videoDoc.streamingPlaylists[0].playlistUrl;
+                        page.appendItem(videoLink, "directory", {
+							title: videoDoc.name + ' ' + 'livestream',
+							icon: MAIN_INSTANCE.substring(0, MAIN_INSTANCE.length - 1) + videoDoc.previewPath,
+							description: 'description'
+						});                   
+                        
+                    }
+                    
                     
                     if(videoDoc.files.length > 0) {
 					for (var y = 0; y < videoDoc.files.length; y++) {
