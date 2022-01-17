@@ -35,7 +35,7 @@
 
     var MAIN_INSTANCE = null;
     
-    settings.createString('instance', 'Peertube instance', 'https://xxivproduction.video/', function(v) {
+    settings.createString('instance', 'Peertube instance', 'https://peervideo.ru/', function(v) {
         try {
         service.domain = v;
         MAIN_INSTANCE = service.domain;
@@ -51,8 +51,10 @@
     });
     var apiString = 'api/v1/videos/';
     var sortString = '?sort=-publishedAt&isLocal=true&count=';
-    var itemCounter = 15;
-	var url = MAIN_INSTANCE + apiString + sortString + itemCounter.toString(); 
+    var itemCounter = 50;
+    var startItem = '&start=';
+    var startItemCounter = 0;
+	var url = MAIN_INSTANCE + apiString + sortString + itemCounter.toString() + startItem + startItemCounter.toString(); 
 	var blue = '6699CC',
 		orange = 'FFA500',
 		red = 'EE0000',
