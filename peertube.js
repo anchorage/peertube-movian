@@ -35,7 +35,7 @@
 
     var MAIN_INSTANCE = null;
     
-    settings.createString('instance', 'Peertube instance', 'https://peervideo.ru/', function(v) {
+    settings.createString('instance', 'Peertube instance', 'https://xxivproduction.video/', function(v) {
         try {
         service.domain = v;
         MAIN_INSTANCE = service.domain;
@@ -51,7 +51,7 @@
     });
     var apiString = 'api/v1/videos/';
     var sortString = '?sort=-publishedAt&isLocal=true&count=';
-    var itemCounter = 50;
+    var itemCounter = 15;
     var startItem = '&start=';
     var startItemCounter = 0;
 	var url = MAIN_INSTANCE + apiString + sortString + itemCounter.toString() + startItem + startItemCounter.toString(); 
@@ -70,8 +70,8 @@
 	
 //base list function
 	function mapSearchResults(page, data) {
-		for (var i = 0; i < data.length; i++) {
-			var item = data[i];
+		for (var i = 0; i < doc.data.length; i++) {
+			var item = doc.data[i]; 
 			page.appendItem(plugin.getDescriptor().id + ":movie:" + item.url.toString(), "video", {
 				title: item.name,
 //				year: item.publishedAt,
@@ -85,6 +85,45 @@
 			});
 		}
 	}
+	
+	function itemList(page) {
+        page.entries = 0;
+        
+        
+        function loader() {
+            page.loading = true;
+            url = MAIN_INSTANCE + apiString + sortString + itemCounter.toString() + startItem + startItemCounter.toString();
+            var doc = http.request(url).toString();
+            
+            page.loading = false;
+            
+            doc = showtime.JSONDecode(doc);
+            for (var i = 0; i < doc.data.length; i++) {
+			var item = doc.data[i]; 
+			page.appendItem(plugin.getDescriptor().id + ":movie:" + item.url.toString(), "video", {
+				title: item.name,
+//				year: item.publishedAt,
+// 				genre: item.genre,
+// 				rating: parseInt(item.rating, 10)* 10,
+// 				tagline: item.slogan,
+ 				icon: MAIN_INSTANCE.substring(0, MAIN_INSTANCE.length - 1) + item.thumbnailPath,//+ item.thumbnailPath.substring(1, item.thumbnailPath.length - 1),
+ 				backdrops: MAIN_INSTANCE.substring(0, MAIN_INSTANCE.length - 1) + item.previewPath, //+ item.previewPath.substring(1, item.previewPath.length - 1),
+// 				duration: item.filmLength,
+ 				description: item.description
+			});
+            page.entries++;
+		}
+            startItemCounter = startItemCounter + itemCounter;
+            if (startItemCounter >= doc.total) return false; 
+            return true;
+        }
+        loader();
+//        page.paginator = loader;
+        page.loading = false;
+        
+		
+        
+    }
 
 	function setPageHeader(page, title, icon) {
 		page.type = "directory";
@@ -93,22 +132,24 @@
 		page.metadata.icon = logo;
 		page.metadata.title = new showtime.RichText(title);
 	}
+	
+//main page with list
 
-	plugin.addURI(plugin.getDescriptor().id + ":start", function (page) {
+	plugin.addURI(plugin.getDescriptor().id + ":start", function (page, id) {
 		setPageHeader(page, plugin.getDescriptor().title);
-		page.loading = true;
-		var doc = showtime.httpReq(url).toString();
-		doc = showtime.JSONDecode(doc);
+		
         //var itemCounter = doc.total;
         //var url = MAIN_INSTANCE + apiString + sortString + itemCounter.toString(); 
         //var doc = showtime.httpReq(url).toString();
 		//doc = showtime.JSONDecode(doc);
-		if (doc) {
-			mapSearchResults(page, doc.data);
-		}
+		
+		itemList(page);
+		
 		page.loading = false;
 	});
-
+    
+//item page
+    
 	plugin.addURI(plugin.getDescriptor().id + ":movie:(.*)", function (page, id) {
 		setPageHeader(page, plugin.getDescriptor().title);
 		page.loading = true;
