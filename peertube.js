@@ -17,16 +17,16 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-// v. 0.0.1
+// v. 0.0.2
 
 	var logo = plugin.path + "logo.png";
 	var pluginDescriptor = plugin.getDescriptor();
 	var service = plugin.createService(pluginDescriptor.title, pluginDescriptor.id + ":start", "video", true, logo);
     
-    var page = require('showtime/page');
-    var service = require('showtime/service');
-    var settings = require('showtime/settings');
-    var http = require('showtime/http');
+    var page = require('movian/page');
+    var service = require('movian/service');
+    var settings = require('movian/settings');
+    var http = require('movian/http');
 
    
     //var for settings
@@ -34,6 +34,7 @@
     
 
     var MAIN_INSTANCE = null;
+    var urls = null;
     
     settings.createString('instance', 'Peertube instance', 'https://xxivproduction.video/', function(v) {
         try {
@@ -51,7 +52,7 @@
     });
     var apiString = 'api/v1/videos/';
     var sortString = '?sort=-publishedAt&isLocal=true&count=';
-    var itemCounter = 15;
+    var itemCounter = 10;
     var startItem = '&start=';
     var startItemCounter = 0;
 	var url = MAIN_INSTANCE + apiString + sortString + itemCounter.toString() + startItem + startItemCounter.toString(); 
@@ -69,26 +70,10 @@
 	}
 	
 //base list function
-	function mapSearchResults(page, data) {
-		for (var i = 0; i < doc.data.length; i++) {
-			var item = doc.data[i]; 
-			page.appendItem(plugin.getDescriptor().id + ":movie:" + item.url.toString(), "video", {
-				title: item.name,
-//				year: item.publishedAt,
-// 				genre: item.genre,
-// 				rating: parseInt(item.rating, 10)* 10,
-// 				tagline: item.slogan,
- 				icon: MAIN_INSTANCE.substring(0, MAIN_INSTANCE.length - 1) + item.thumbnailPath,//+ item.thumbnailPath.substring(1, item.thumbnailPath.length - 1),
- 				backdrops: MAIN_INSTANCE.substring(0, MAIN_INSTANCE.length - 1) + item.previewPath, //+ item.previewPath.substring(1, item.previewPath.length - 1),
-// 				duration: item.filmLength,
- 				description: item.description
-			});
-		}
-	}
 	
 	function itemList(page) {
         page.entries = 0;
-        
+        startItemCounter = 0;
         
         function loader() {
             page.loading = true;
@@ -99,26 +84,30 @@
             
             doc = showtime.JSONDecode(doc);
             for (var i = 0; i < doc.data.length; i++) {
-			var item = doc.data[i]; 
-			page.appendItem(plugin.getDescriptor().id + ":movie:" + item.url.toString(), "video", {
-				title: item.name,
+                var item = doc.data[i]; 
+                page.appendItem(plugin.getDescriptor().id + ":movie:" + item.uuid.toString(), "video", {
+                    title: item.name,
 //				year: item.publishedAt,
 // 				genre: item.genre,
 // 				rating: parseInt(item.rating, 10)* 10,
 // 				tagline: item.slogan,
- 				icon: MAIN_INSTANCE.substring(0, MAIN_INSTANCE.length - 1) + item.thumbnailPath,//+ item.thumbnailPath.substring(1, item.thumbnailPath.length - 1),
- 				backdrops: MAIN_INSTANCE.substring(0, MAIN_INSTANCE.length - 1) + item.previewPath, //+ item.previewPath.substring(1, item.previewPath.length - 1),
+                    icon: MAIN_INSTANCE.substring(0, MAIN_INSTANCE.length - 1) + item.thumbnailPath,
+                                //+ item.thumbnailPath.substring(1, item.thumbnailPath.length - 1),
+                    backdrops: MAIN_INSTANCE.substring(0, MAIN_INSTANCE.length - 1) + item.previewPath, //+ item.previewPath.substring(1, item.previewPath.length - 1),
 // 				duration: item.filmLength,
- 				description: item.description
-			});
-            page.entries++;
+                    description: item.description
+                    
+                });
+                urls = item.url.toString()
+                page.entries++;
 		}
             startItemCounter = startItemCounter + itemCounter;
-            if (startItemCounter >= doc.total) return false; 
+            if (startItemCounter > doc.total) return false; 
             return true;
         }
         loader();
-//        page.paginator = loader;
+        page.paginator = loader;
+        
         page.loading = false;
         
 		
@@ -138,12 +127,7 @@
 	plugin.addURI(plugin.getDescriptor().id + ":start", function (page, id) {
 		setPageHeader(page, plugin.getDescriptor().title);
 		
-        //var itemCounter = doc.total;
-        //var url = MAIN_INSTANCE + apiString + sortString + itemCounter.toString(); 
-        //var doc = showtime.httpReq(url).toString();
-		//doc = showtime.JSONDecode(doc);
-		
-		itemList(page);
+ 		itemList(page);
 		
 		page.loading = false;
 	});
@@ -153,86 +137,59 @@
 	plugin.addURI(plugin.getDescriptor().id + ":movie:(.*)", function (page, id) {
 		setPageHeader(page, plugin.getDescriptor().title);
 		page.loading = true;
-		var doc = showtime.httpReq(url).toString();
-		doc = showtime.JSONDecode(doc);
         
 //getting information from json
-
-		if (doc) {            
-			var docs = doc.data
-			for (var i = 0; i < docs.length; i++) {
+        if (id) {
+            startItemCounter = 0;
+            var videoJsonLink = MAIN_INSTANCE + apiString + id;
+            var videoDoc = showtime.httpReq(videoJsonLink).toString();
+            videoDoc = showtime.JSONDecode(videoDoc);
+//for Livestreams
+            if(videoDoc.isLive){
+                var videoLink = videoDoc.streamingPlaylists[0].playlistUrl;
+                page.appendItem(videoLink, "directory", {
+                    title: videoDoc.name + ' ' + 'livestream',
+                    icon: MAIN_INSTANCE.substring(0, MAIN_INSTANCE.length - 1) + videoDoc.previewPath,
+                    description: 'description'
+                    
+                });
                 
-				if (docs[i].url.toString() == id) {
-                    var videoJsonLink = MAIN_INSTANCE + apiString + docs[i].uuid;
-                    var videoDoc = showtime.httpReq(videoJsonLink).toString();
-                    videoDoc = showtime.JSONDecode(videoDoc);
-//for Livestreams                    
-                    if(videoDoc.isLive){
-                        
-                        var videoLink = videoDoc.streamingPlaylists[0].playlistUrl;
-                        page.appendItem(videoLink, "directory", {
-							title: videoDoc.name + ' ' + 'livestream',
-							icon: MAIN_INSTANCE.substring(0, MAIN_INSTANCE.length - 1) + videoDoc.previewPath,
-							description: 'description'
-						});                   
-                        
-                    }
+            }
+            if(videoDoc.files.length > 0) {
+                for (var y = 0; y < videoDoc.files.length; y++) {
+                    var torrentInfo = videoDoc.files[y];
+                    var torrentInfoForDate = videoDoc.publishedAt;
+                    var videoLink = torrentInfo.fileDownloadUrl ;
                     
+                    page.appendItem(videoLink, "directory", {
+                        title: videoDoc.name + ' ' + torrentInfo.resolution.label,
+                        icon: MAIN_INSTANCE.substring(0, MAIN_INSTANCE.length - 1) + videoDoc.previewPath,
+                        description: torrentInfoForDate
+                        
+                    });
                     
-                    if(videoDoc.files.length > 0) {
-					for (var y = 0; y < videoDoc.files.length; y++) {
-						var torrentInfo = videoDoc.files[y];
-						var torrentInfoForDate = videoDoc.publishedAt;
-                        
-//creating correct link for videos
-// 						var videoFormat = '-720-fragmented';
-//                         var videoCatalog = 'download/videos/';
-//                         var videoId = docs[i].id.split('videos/watch/', 2)[1];
-//                         var videoContainer = '.mp4';
-//                         if (torrentInfo.url.substring((torrentInfo.url.length - 12),(torrentInfo.url.length - 8)) == '-hls'){
-//                             videoFormat = torrentInfo.url.substring((torrentInfo.url.length - 16),(torrentInfo.url.length - 12)) + '-fragmented';
-//                             videoCatalog = 'download/streaming-playlists/hls/videos/';
-//                         } else {
-//                             videoFormat = torrentInfo.url.substring((torrentInfo.url.length - 12),(torrentInfo.url.length - 8));
-//                         }
-//                         if (videoFormat == '1080' || videoFormat == '1080-fragmented') {
-//                             videoFormat = '-' + videoFormat;
-//                         } 
-//                         if (!docs[i].attachments.length){
-//                             videoFormat = '';
-//                             videoCatalog = 'download/streaming-playlists/hls/';
-//                             videoContainer = '/0.m3u8'
-//                             
-//                         }                                           
-                        
-						var videoLink = torrentInfo.fileDownloadUrl ;   
-						
-
-						page.appendItem(videoLink, "directory", {
-							title: videoDoc.name + ' ' + torrentInfo.resolution.label,
-							icon: MAIN_INSTANCE.substring(0, MAIN_INSTANCE.length - 1) + videoDoc.previewPath,
-							description: torrentInfoForDate
-						});
-					}
-                    } else {
-                    for (var y = 0; y < videoDoc.streamingPlaylists[0].files.length; y++) {
-						var torrentInfo = videoDoc.streamingPlaylists[0].files[y];
-// 						var torrentInfoForDate = videoDoc.publishedAt;
+                }
+                
+            } else {
+                for (var y = 0; y < videoDoc.streamingPlaylists[0].files.length; y++) {
+                    var torrentInfo = videoDoc.streamingPlaylists[0].files[y];
+// 					var torrentInfoForDate = videoDoc.publishedAt;
                                                                       
-						var videoLink = torrentInfo.fileDownloadUrl ;   
+                    var videoLink = torrentInfo.fileDownloadUrl ;   
 						
 
-						page.appendItem(videoLink, "directory", {
-							title: videoDoc.name + ' ' + torrentInfo.resolution.label,
-							icon: MAIN_INSTANCE.substring(0, MAIN_INSTANCE.length - 1) + videoDoc.previewPath,
-							description: 'description'
-						});
+                    page.appendItem(videoLink, "directory", {
+                        title: videoDoc.name + ' ' + torrentInfo.resolution.label,
+                        icon: MAIN_INSTANCE.substring(0, MAIN_INSTANCE.length - 1) + videoDoc.previewPath,
+                        description: 'description'
                         
-                    }
+                    });
                     
-				}
-			}
-		}
+                }
+                
+            }
+
+            
         }
 		page.loading = false;
 	});
