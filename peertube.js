@@ -17,7 +17,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-// v. 0.0.2
+// v. 0.0.3
 
 	var logo = plugin.path + "logo.png";
 	var pluginDescriptor = plugin.getDescriptor();
@@ -36,7 +36,7 @@
     var MAIN_INSTANCE = null;
     var urls = null;
     
-    settings.createString('instance', 'Peertube instance', 'https://xxivproduction.video/', function(v) {
+    settings.createString('instance', 'Peertube instance', 'https://peervideo.ru/', function(v) {
         try {
         service.domain = v;
         MAIN_INSTANCE = service.domain;
@@ -122,14 +122,63 @@
 		page.metadata.title = new showtime.RichText(title);
 	}
 	
+//search
+
+ plugin.addURI(plugin.getDescriptor().id + ":search:(.*):(.*)", function (page, id, search ) {
+		var search,
+		id,
+        tryToSearch = true,
+        pageNum = 0;		
+			
+        setPageHeader(page, "Search results on this instance for  : " + search);
+		
+        
+        page.entries = 0;
+        startItemCounter = 0;
+        
+        function loader() {
+            page.loading = true;
+            url = MAIN_INSTANCE + "api/v1/search/videos?search=" + encodeURIComponent(search)+"&sort=-publishedAt&searchTarget=local&isLocal=true&count=" + itemCounter.toString() + startItem + startItemCounter.toString();
+            var doc = http.request(url).toString();
+            
+            page.loading = false;
+            
+            doc = showtime.JSONDecode(doc);
+            for (var i = 0; i < doc.data.length; i++) {
+                var item = doc.data[i]; 
+                page.appendItem(plugin.getDescriptor().id + ":movie:" + item.uuid.toString(), "video", {
+                    title: item.name,
+
+                    icon: MAIN_INSTANCE.substring(0, MAIN_INSTANCE.length - 1) + item.thumbnailPath,
+                    backdrops: MAIN_INSTANCE.substring(0, MAIN_INSTANCE.length - 1) + item.previewPath, 
+                    description: item.description
+                    
+                });
+                urls = item.url.toString()
+                page.entries++;
+		}
+            startItemCounter = startItemCounter + itemCounter;
+            if (startItemCounter > doc.total) return false; 
+            return true;
+        }
+        loader();
+        page.paginator = loader;
+        
+        page.loading = false;
+       
+    });
 //main page with list
 
 	plugin.addURI(plugin.getDescriptor().id + ":start", function (page, id) {
 		setPageHeader(page, plugin.getDescriptor().title);
-		
+		page.appendItem(plugin.getDescriptor().id + ":search:0:", 'search', {
+				title: 'Search on ' + MAIN_INSTANCE
+			});
  		itemList(page);
 		
 		page.loading = false;
+        
+        
 	});
     
 //item page
