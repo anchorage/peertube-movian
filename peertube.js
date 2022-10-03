@@ -17,7 +17,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-// v. 0.0.3
+// v. 0.0.4 beta
 
 	var logo = plugin.path + "logo.png";
 	var pluginDescriptor = plugin.getDescriptor();
@@ -35,7 +35,7 @@
 
     var MAIN_INSTANCE = null;
     var urls = null;
-    
+    //MAIN_INSTANCE setting
     settings.createString('instance', 'Peertube instance', 'https://peervideo.ru/', function(v) {
         try {
         service.domain = v;
@@ -44,18 +44,79 @@
             
         }
     });
+    // Show local or remote videos
+       settings.createMultiOpt('isLocal', 'Show videos from remote servers', [
+			['&isLocal=true', 'Show local videos only', true],
+			['&isLocal=false', 'Show remote and local videos'],
+		], function(v) {
+		service.isLocal = v;
+	});
+
+       //Sorting main list setting
+    // sort	
+    // string
+    // Enum: "name" "-duration" "-createdAt" "-publishedAt" "-views" "-likes" "-trending" "-hot" "-best"
+    // Sort videos by criteria (prefixing with - means DESC order):
+    //     hot - Adaptation of Reddit "hot" algorithm taking into account video views, likes, dislikes and comments and publication date
+    //     best - Same than hot, but also takes into account user video history
+    //     trending - Sort videos by recent views ("recent" is defined by the admin)
+    //     views - Sort videos using their views counter
+    //     publishedAt - Sort by video publication date (when it became publicly available)
+    settings.createMultiOpt('sortList', 'Sort main videos list by selected criteria', [
+			['?sort=-publishedAt', 'Published date descending', true],
+			['?sort=name', 'Name'],
+            ['?sort=-trending', 'Trending'],
+            ['?sort=-hot', 'Hot'],
+            ['?sort=-best', 'Best'],
+            ['?sort=-createdAt', 'Created date descending'],
+            ['?sort=-views', 'Views'],
+            ['?sort=-likes', 'Likes'],
+		], function(v) {
+		service.sortList = v;
+	});
+           //Sorting search results list setting
+    // sort	
+    // string
+    //  Enum: "name" "-duration" "-createdAt" "-publishedAt" "-views" "-likes" "-match"
+    // Sort videos by criteria (prefixing with - means DESC order):
+    //     views - Sort videos using their views counter
+    //     publishedAt - Sort by video publication date (when it became publicly available)
+    settings.createMultiOpt('sortSearch', 'Sort search results list by selected criteria', [
+			['&sort=-publishedAt', 'Published date descending', true],
+			['&sort=name', 'Name'],
+            ['&sort=-duration', 'Duration'],
+            ['&sort=-match', 'Match'],
+            ['&sort=-createdAt', 'Created date descending'],
+            ['&sort=-views', 'Views'],
+            ['&sort=-likes', 'Likes'],
+		], function(v) {
+		service.sortSearch = v;
+	});
+          //NSFW setting
+    settings.createMultiOpt('nsfw', 'NSFW', [
+			['&nsfw=false', 'Hide', true],
+			['&nsfw=true', 'Show'],
+            ['&nsfw=both', 'Show blurred'],
+            ['', 'Default server setting']
+		], function(v) {
+		service.nsfw = v;
+	});
 
     
     settings.createBool('debug', 'Debug', false, function(v) {
         service.debug = v;
 //        log.d(service);
     });
+    function printDebug(message) {
+  if (service.debug) console.error(message);
+};
     var apiString = 'api/v1/videos/';
     var sortString = '?sort=-publishedAt&isLocal=true&count=';
     var itemCounter = 10;
     var startItem = '&start=';
+    var stringCount = '&count=';
     var startItemCounter = 0;
-	var url = MAIN_INSTANCE + apiString + sortString + itemCounter.toString() + startItem + startItemCounter.toString(); 
+	var url = MAIN_INSTANCE + apiString + service.sortList  + service.nsfw + service.isLocal + stringCount + itemCounter.toString() + startItem + startItemCounter.toString();
 	var blue = '6699CC',
 		orange = 'FFA500',
 		red = 'EE0000',
@@ -77,7 +138,7 @@
         
         function loader() {
             page.loading = true;
-            url = MAIN_INSTANCE + apiString + sortString + itemCounter.toString() + startItem + startItemCounter.toString();
+            url = MAIN_INSTANCE + apiString + service.sortList  + service.nsfw + service.isLocal + stringCount + itemCounter.toString() + startItem + startItemCounter.toString();
             var doc = http.request(url).toString();
             
             page.loading = false;
@@ -138,7 +199,7 @@
         
         function loader() {
             page.loading = true;
-            url = MAIN_INSTANCE + "api/v1/search/videos?search=" + encodeURIComponent(search)+"&sort=-publishedAt&searchTarget=local&isLocal=true&count=" + itemCounter.toString() + startItem + startItemCounter.toString();
+            url = MAIN_INSTANCE + "api/v1/search/videos?search=" + encodeURIComponent(search) + service.sortSearch + service.nsfw + "&searchTarget=local" + service.isLocal + stringCount + itemCounter.toString() + startItem + startItemCounter.toString();
             var doc = http.request(url).toString();
             
             page.loading = false;
